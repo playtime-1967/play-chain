@@ -3,14 +3,13 @@ use sha2::{Digest, Sha256};
 
 fn main() {
     println!("Play Chain!");
-    let mut blockchain = Blockchain::new(4);
+    let mut blockchain = Blockchain::new(4, 10);
     blockchain.add_block("block1 data".to_string());
     blockchain.add_block("block2 data".to_string());
     blockchain.add_block("block3 data".to_string());
 
     blockchain.print_chain();
 
-    // Validate the blockchain
     if blockchain.is_valid() {
         println!("The blockchain is valid.");
     } else {
@@ -20,7 +19,8 @@ fn main() {
     //invalidate_chain(&mut blockchain);
 }
 
-fn invalidate_chain(blockchain: &mut Blockchain) { //Sample
+fn invalidate_chain(blockchain: &mut Blockchain) {
+    //Sample to to see Invalid status
     blockchain.chain[1].data = "Tampered Data".to_string();
     blockchain.chain[1].hash = blockchain.chain[1].calculate_hash();
     if blockchain.is_valid() {
@@ -37,21 +37,19 @@ struct Block {
     data: String,
     previous_hash: String,
     hash: String,
-    nonce: u64, // Used to modify the hash during mining
+    nonce: u64,
 }
 
 impl Block {
     fn new(index: u64, data: String, previous_hash: String) -> Self {
-        let mut block = Block {
+        Block {
             index,
             data,
             previous_hash,
-            timestamp: Utc::now().to_rfc3339(),
+            timestamp: String::new(),
             hash: String::new(),
             nonce: 0,
-        };
-        block.hash = block.calculate_hash();
-        block
+        }
     }
 
     fn calculate_hash(&self) -> String {
@@ -69,6 +67,7 @@ impl Block {
         let prefix = "0".repeat(difficulty);
         while !self.hash.starts_with(&prefix) {
             self.nonce += 1;
+            self.timestamp = Utc::now().to_rfc3339();
             self.hash = self.calculate_hash();
         }
 
@@ -78,14 +77,16 @@ impl Block {
 
 struct Blockchain {
     chain: Vec<Block>,
-    difficulty: usize, // Number of leading zeros required in a valid hash
+    difficulty: usize,
+    target_time: u64,
 }
 
 impl Blockchain {
-    fn new(difficulty: usize) -> Self {
+    fn new(difficulty: usize, target_time: u64) -> Self {
         let mut block_chain = Blockchain {
             chain: Vec::new(),
             difficulty,
+            target_time,
         };
         block_chain.add_genesis_block();
         block_chain
@@ -93,6 +94,10 @@ impl Blockchain {
 
     fn get_latest_block(&self) -> &Block {
         self.chain.last().unwrap()
+    }
+
+    fn get_second_last_block(&self) -> &Block {
+        &self.chain[self.chain.len() - 2]
     }
 
     fn add_genesis_block(&mut self) {
@@ -106,6 +111,8 @@ impl Blockchain {
         let mut new_block = Block::new(previous_block.index + 1, data, previous_block.hash.clone());
         new_block.mine_block(self.difficulty);
         self.chain.push(new_block);
+
+        self.adjust_difficulty();
     }
 
     fn is_valid(&self) -> bool {
@@ -113,13 +120,11 @@ impl Blockchain {
             let current_block = &self.chain[i];
             let previous_block = &self.chain[i - 1];
 
-            // Check if the current block's hash is correct
             if current_block.hash != current_block.calculate_hash() {
                 println!("Block {} has an invalid hash!", current_block.index);
                 return false;
             }
 
-            // Check if the current block's previous_hash matches the hash of the previous block
             if current_block.previous_hash != previous_block.hash {
                 println!(
                     "Block {} has an invalid previous hash!",
@@ -131,9 +136,37 @@ impl Blockchain {
         true
     }
 
+    fn adjust_difficulty(&mut self) {
+        if self.chain.len() < 2 {
+            return; // No adjustment for the genesis block
+        }
+
+        let last_block = self.get_latest_block();
+        let second_last_block = self.get_second_last_block();
+
+        let last_block_time = DateTime::parse_from_str(&last_block.timestamp, "%+").unwrap();
+        let second_last_block_time =
+            DateTime::parse_from_str(&second_last_block.timestamp, "%+").unwrap();
+
+        let actual_time = (last_block_time - second_last_block_time).num_seconds() as u64;
+
+        println!(
+            "Actual block time: {} seconds | Target block time: {} seconds",
+            actual_time, self.target_time
+        );
+
+        if actual_time < self.target_time {
+            self.difficulty += 1;
+            println!("Difficulty increased to {}", self.difficulty);
+        } else if actual_time > self.target_time && self.difficulty > 1 {
+            self.difficulty -= 1;
+            println!("Difficulty decreased to {}", self.difficulty);
+        }
+    }
+
     fn print_chain(&self) {
         for block in &self.chain {
-            print!("{:?}", block)
+            println!("{:?}", block)
         }
     }
 }
