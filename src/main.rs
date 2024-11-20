@@ -1,13 +1,33 @@
 use chrono::prelude::*;
 use sha2::{Digest, Sha256};
 
-
 fn main() {
     println!("Play Chain!");
-    let mut chain = Blockchain::new(4);
-    chain.add_block("block1 data".to_string());
-    chain.add_block("block2 data".to_string());
-    chain.print_chain();
+    let mut blockchain = Blockchain::new(4);
+    blockchain.add_block("block1 data".to_string());
+    blockchain.add_block("block2 data".to_string());
+    blockchain.add_block("block3 data".to_string());
+
+    blockchain.print_chain();
+
+    // Validate the blockchain
+    if blockchain.is_valid() {
+        println!("The blockchain is valid.");
+    } else {
+        println!("The blockchain is invalid!");
+    }
+
+    //invalidate_chain(&mut blockchain);
+}
+
+fn invalidate_chain(blockchain: &mut Blockchain) { //Sample
+    blockchain.chain[1].data = "Tampered Data".to_string();
+    blockchain.chain[1].hash = blockchain.chain[1].calculate_hash();
+    if blockchain.is_valid() {
+        println!("The blockchain is valid.");
+    } else {
+        println!("The blockchain is invalid!");
+    }
 }
 
 #[derive(Debug)]
@@ -88,10 +108,32 @@ impl Blockchain {
         self.chain.push(new_block);
     }
 
+    fn is_valid(&self) -> bool {
+        for i in 1..self.chain.len() {
+            let current_block = &self.chain[i];
+            let previous_block = &self.chain[i - 1];
+
+            // Check if the current block's hash is correct
+            if current_block.hash != current_block.calculate_hash() {
+                println!("Block {} has an invalid hash!", current_block.index);
+                return false;
+            }
+
+            // Check if the current block's previous_hash matches the hash of the previous block
+            if current_block.previous_hash != previous_block.hash {
+                println!(
+                    "Block {} has an invalid previous hash!",
+                    current_block.index
+                );
+                return false;
+            }
+        }
+        true
+    }
+
     fn print_chain(&self) {
         for block in &self.chain {
             print!("{:?}", block)
         }
     }
 }
-
