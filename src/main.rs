@@ -4,23 +4,12 @@ use sha2::{Digest, Sha256};
 fn main() {
     println!("Play Chain!");
     let mut blockchain = Blockchain::new(4, 10);
-    blockchain.add_transaction(Transaction {
-        sender: "Alice".to_string(),
-        receiver: "Bob".to_string(),
-        amount: 50.0,
-    });
-    blockchain.add_transaction(Transaction {
-        sender: "Bob".to_string(),
-        receiver: "Charlie".to_string(),
-        amount: 30.0,
-    });
+
+    blockchain.add_transaction(Transaction::new("Alice", "Bob", 30.0));
+    blockchain.add_transaction(Transaction::new("Bob", "Charlie", 50.0));
     blockchain.add_block();
 
-    blockchain.add_transaction(Transaction {
-        sender: "Jon".to_string(),
-        receiver: "Rick".to_string(),
-        amount: 70.0,
-    });
+    blockchain.add_transaction(Transaction::new("Jon", "Rick", 70.0));
     blockchain.add_block();
 
     blockchain.add_block(); //no transactions
@@ -37,11 +26,7 @@ fn main() {
 }
 
 fn invalidate_chain(blockchain: &mut Blockchain) {
-    let transactions = vec![Transaction {
-        sender: "...".to_string(),
-        receiver: "...".to_string(),
-        amount: 100.0,
-    }];
+    let transactions = vec![Transaction::new("...", "...", 100.0)];
     blockchain.chain[1].transactions = transactions;
     blockchain.chain[1].hash = blockchain.chain[1].calculate_hash();
     if blockchain.is_valid() {
@@ -66,14 +51,34 @@ struct Transaction {
     sender: String,
     receiver: String,
     amount: f64,
+    is_reward: bool, //miner's reward
+}
+
+impl Transaction {
+    fn new(sender: &str, receiver: &str, amount: f64) -> Self {
+        Transaction {
+            sender: sender.to_string(),
+            receiver: receiver.to_string(),
+            amount,
+            is_reward: false,
+        }
+    }
+    fn reward(receiver: &str, amount: f64) -> Self {
+        Transaction {
+            sender: "Network".to_string(),
+            receiver: receiver.to_string(),
+            amount,
+            is_reward: true,
+        }
+    }
 }
 
 impl Block {
-    fn new(index: u64, transactions: Vec<Transaction>, previous_hash: String) -> Self {
+    fn new(index: u64, transactions: Vec<Transaction>, previous_hash: &str) -> Self {
         Block {
             index,
             transactions,
-            previous_hash,
+            previous_hash: previous_hash.to_string(),
             timestamp: String::new(),
             hash: String::new(),
             nonce: 0,
@@ -129,6 +134,11 @@ impl Blockchain {
     }
 
     fn add_transaction(&mut self, transaction: Transaction) {
+        if transaction.amount <= 0.0 {
+            println!("Invalid transaction: amount must be positive!");
+            return;
+        }
+        // TODO: Validate sender has sufficient balance
         self.pending_transactions.push(transaction);
     }
 
@@ -141,7 +151,7 @@ impl Blockchain {
     }
 
     fn add_genesis_block(&mut self) {
-        let mut genesis_block = Block::new(0, Vec::new(), "0".to_string());
+        let mut genesis_block = Block::new(0, Vec::new(), "0");
         genesis_block.mine_block(self.difficulty);
         self.chain.push(genesis_block);
     }
@@ -152,11 +162,14 @@ impl Blockchain {
             return;
         }
 
+        let reward_transaction = Transaction::reward("MinerAddress", 0.5);
+        self.pending_transactions.insert(0, reward_transaction);
+
         let previous_block = self.get_latest_block();
         let mut new_block = Block::new(
             previous_block.index + 1,
             self.pending_transactions.clone(),
-            previous_block.hash.clone(),
+            &previous_block.hash,
         );
         new_block.mine_block(self.difficulty);
         self.chain.push(new_block);
