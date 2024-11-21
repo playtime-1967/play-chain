@@ -4,9 +4,26 @@ use sha2::{Digest, Sha256};
 fn main() {
     println!("Play Chain!");
     let mut blockchain = Blockchain::new(4, 10);
-    blockchain.add_block("block1 data".to_string());
-    blockchain.add_block("block2 data".to_string());
-    blockchain.add_block("block3 data".to_string());
+    blockchain.add_transaction(Transaction {
+        sender: "Alice".to_string(),
+        receiver: "Bob".to_string(),
+        amount: 50.0,
+    });
+    blockchain.add_transaction(Transaction {
+        sender: "Bob".to_string(),
+        receiver: "Charlie".to_string(),
+        amount: 30.0,
+    });
+    blockchain.add_block();
+
+    blockchain.add_transaction(Transaction {
+        sender: "Jon".to_string(),
+        receiver: "Rick".to_string(),
+        amount: 70.0,
+    });
+    blockchain.add_block();
+
+    blockchain.add_block(); //no transactions
 
     blockchain.print_chain();
 
@@ -16,12 +33,16 @@ fn main() {
         println!("The blockchain is invalid!");
     }
 
-    //invalidate_chain(&mut blockchain);
+    //invalidate_chain(&mut blockchain); //Sample
 }
 
 fn invalidate_chain(blockchain: &mut Blockchain) {
-    //Sample to to see Invalid status
-    blockchain.chain[1].data = "Tampered Data".to_string();
+    let transactions = vec![Transaction {
+        sender: "...".to_string(),
+        receiver: "...".to_string(),
+        amount: 100.0,
+    }];
+    blockchain.chain[1].transactions = transactions;
     blockchain.chain[1].hash = blockchain.chain[1].calculate_hash();
     if blockchain.is_valid() {
         println!("The blockchain is valid.");
@@ -34,17 +55,24 @@ fn invalidate_chain(blockchain: &mut Blockchain) {
 struct Block {
     index: u64,
     timestamp: String,
-    data: String,
+    transactions: Vec<Transaction>,
     previous_hash: String,
     hash: String,
     nonce: u64,
 }
 
+#[derive(Debug, Clone)]
+struct Transaction {
+    sender: String,
+    receiver: String,
+    amount: f64,
+}
+
 impl Block {
-    fn new(index: u64, data: String, previous_hash: String) -> Self {
+    fn new(index: u64, transactions: Vec<Transaction>, previous_hash: String) -> Self {
         Block {
             index,
-            data,
+            transactions,
             previous_hash,
             timestamp: String::new(),
             hash: String::new(),
@@ -53,9 +81,15 @@ impl Block {
     }
 
     fn calculate_hash(&self) -> String {
+        let transaction_data: String = self
+            .transactions
+            .iter()
+            .map(|tx| format!("{}->{}:{}", tx.sender, tx.receiver, tx.amount))
+            .collect();
+
         let block_data = format!(
             "{}{}{}{}{}",
-            self.index, self.timestamp, self.data, self.previous_hash, self.nonce
+            self.index, self.timestamp, transaction_data, self.previous_hash, self.nonce
         );
         let mut hasher = Sha256::new();
         hasher.update(block_data);
@@ -77,6 +111,7 @@ impl Block {
 
 struct Blockchain {
     chain: Vec<Block>,
+    pending_transactions: Vec<Transaction>,
     difficulty: usize,
     target_time: u64,
 }
@@ -85,11 +120,16 @@ impl Blockchain {
     fn new(difficulty: usize, target_time: u64) -> Self {
         let mut block_chain = Blockchain {
             chain: Vec::new(),
+            pending_transactions: Vec::new(),
             difficulty,
             target_time,
         };
         block_chain.add_genesis_block();
         block_chain
+    }
+
+    fn add_transaction(&mut self, transaction: Transaction) {
+        self.pending_transactions.push(transaction);
     }
 
     fn get_latest_block(&self) -> &Block {
@@ -101,16 +141,27 @@ impl Blockchain {
     }
 
     fn add_genesis_block(&mut self) {
-        let mut genesis_block = Block::new(0, "Genesis Block".to_string(), "0".to_string());
+        let mut genesis_block = Block::new(0, Vec::new(), "0".to_string());
         genesis_block.mine_block(self.difficulty);
         self.chain.push(genesis_block);
     }
 
-    fn add_block(&mut self, data: String) {
+    fn add_block(&mut self) {
+        if self.pending_transactions.is_empty() {
+            println!("No transactions to add!");
+            return;
+        }
+
         let previous_block = self.get_latest_block();
-        let mut new_block = Block::new(previous_block.index + 1, data, previous_block.hash.clone());
+        let mut new_block = Block::new(
+            previous_block.index + 1,
+            self.pending_transactions.clone(),
+            previous_block.hash.clone(),
+        );
         new_block.mine_block(self.difficulty);
         self.chain.push(new_block);
+
+        self.pending_transactions.clear(); // Clear the pending transactions once included in a block
 
         self.adjust_difficulty();
     }
