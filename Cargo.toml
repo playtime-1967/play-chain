@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sha2 = "0.10.8"
-chrono = "0.4.38"
+sha2 = "0.10"
+chrono = "0.4"
+hex = "0.4"
+ed25519-dalek={version="2.1", features=["rand_core"]}
+rand="0.8"
+anyhow = "1.0"

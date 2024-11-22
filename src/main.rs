@@ -1,11 +1,32 @@
+use anyhow::{bail, Ok, Result};
 use chrono::prelude::*;
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey, KEYPAIR_LENGTH};
+use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
 
-fn main() {
-    println!("Play Chain!");
-    let mut blockchain = Blockchain::new(4, 10);
+//helper
+fn generate_keypair() -> (SigningKey, VerifyingKey) {
+    let mut csprng = OsRng {};
+    let signing_key = SigningKey::generate(&mut csprng);
+    let verifying_key = signing_key.verifying_key();
+    (signing_key, verifying_key)
+}
 
-    blockchain.add_transaction(Transaction::new("Alice", "Bob", 30.0));
+fn main() -> Result<()> {
+    println!("Play Chain!");
+
+    let (signing_key, verifying_key) = generate_keypair();
+
+    let mut blockchain = Blockchain::new(4, 10);
+    let mut transaction1 = Transaction::new("Alice", "Bob", 30.0);
+    transaction1.sign(&signing_key)?; //TODO: Sign and Verify other blocks as well.
+    match transaction1.verify(&verifying_key) {
+        std::result::Result::Ok(_) => println!("Transaction's signature is valid!"),
+        Err(err) => {
+            panic!("Transaction verification failed: {}", err)
+        }
+    }
+    blockchain.add_transaction(transaction1);
     blockchain.add_transaction(Transaction::new("Bob", "Charlie", 50.0));
     blockchain.add_block();
 
@@ -22,6 +43,7 @@ fn main() {
         println!("The blockchain is invalid!");
     }
 
+    Ok(())
     //invalidate_chain(&mut blockchain); //Sample
 }
 
@@ -52,6 +74,7 @@ struct Transaction {
     receiver: String,
     amount: f64,
     is_reward: bool, //miner's reward
+    signature: Option<Signature>,
 }
 
 impl Transaction {
@@ -61,6 +84,7 @@ impl Transaction {
             receiver: receiver.to_string(),
             amount,
             is_reward: false,
+            signature: None,
         }
     }
     fn reward(receiver: &str, amount: f64) -> Self {
@@ -69,7 +93,27 @@ impl Transaction {
             receiver: receiver.to_string(),
             amount,
             is_reward: true,
+            signature: None,
         }
+    }
+
+    fn sign(&mut self, signing_key: &SigningKey) -> anyhow::Result<()> {
+        let message = self.get_message();
+        self.signature = Some(signing_key.sign(message.as_bytes()));
+        Ok(())
+    }
+
+    fn verify(&self, verifying_key: &VerifyingKey) -> Result<()> {
+        let signature = self
+            .signature
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No signature found"))?;
+        verifying_key.verify(self.get_message().as_bytes(), signature)?;
+        Ok(())
+    }
+
+    fn get_message(&self) -> String {
+        format!("{}->{}:{}", self.sender, self.receiver, self.amount)
     }
 }
 
@@ -89,7 +133,7 @@ impl Block {
         let transaction_data: String = self
             .transactions
             .iter()
-            .map(|tx| format!("{}->{}:{}", tx.sender, tx.receiver, tx.amount))
+            .map(|tx| tx.get_message())
             .collect();
 
         let block_data = format!(
@@ -100,6 +144,13 @@ impl Block {
         hasher.update(block_data);
         format!("{:x}", hasher.finalize())
     }
+
+    // fn get_raw_block_data(&self) -> String {
+    //     format!(
+    //         "{}{}{}{}{}",
+    //         self.index, self.timestamp, transaction_data, self.previous_hash, self.nonce
+    //     )
+    // }
 
     // Perform Proof-of-Work by finding a hash that starts with a certain number of zeros
     fn mine_block(&mut self, difficulty: usize) {
