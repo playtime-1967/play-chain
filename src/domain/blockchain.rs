@@ -1,5 +1,6 @@
 use super::Block;
 use super::Transaction;
+use anyhow::{anyhow, Error, Ok, Result};
 use chrono::prelude::*;
 
 pub struct Blockchain {
@@ -21,13 +22,40 @@ impl Blockchain {
         block_chain
     }
 
-    pub fn add_transaction(&mut self, transaction: Transaction) {
+    pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
         if transaction.amount <= 0.0 {
-            println!("Invalid transaction: amount must be positive!");
-            return;
+            return Err(anyhow!("Invalid transaction: amount must be positive!"));
         }
-        // TODO: Validate sender has sufficient balance
+
+        let sender_balance = self.get_balance(&transaction.sender);
+        print!("sender: {} balance:{}", transaction.sender, sender_balance);
+
+        if sender_balance < transaction.amount {
+            return Err(anyhow!(
+                "Transaction rejected: Insufficient funds for {}",
+                transaction.sender
+            ));
+        }
+
         self.pending_transactions.push(transaction);
+        Ok(())
+    }
+
+    pub fn get_balance(&self, address: &str) -> f64 {
+        // let mut balance = 0.0;
+        // for block in &self.chain {
+        //     for transaction in &block.transactions {
+        //         if transaction.sender == address {
+        //             balance -= transaction.amount;
+        //         }
+        //         if transaction.receiver == address {
+        //             balance += transaction.amount;
+        //         }
+        //     }
+        // }
+
+        // balance
+        150.0
     }
 
     fn get_latest_block(&self) -> &Block {
