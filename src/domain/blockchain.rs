@@ -1,13 +1,21 @@
+use crate::domain::transaction;
+
+use super::network;
 use super::Block;
+use super::Network;
+
 use super::Transaction;
 use anyhow::{anyhow, Error, Ok, Result};
 use chrono::prelude::*;
+use std::collections::HashSet;
 
 pub struct Blockchain {
     pub chain: Vec<Block>,
     pub pending_transactions: Vec<Transaction>,
     pub difficulty: usize,
     pub target_time: u64,
+    pub peers: HashSet<String>,
+    pub network: Network,
 }
 
 impl Blockchain {
@@ -17,18 +25,24 @@ impl Blockchain {
             pending_transactions: Vec::new(),
             difficulty,
             target_time,
+            peers: HashSet::new(),
+            network: Network::new(),
         };
         block_chain.add_genesis_block();
         block_chain
     }
 
-    pub fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
+    pub fn set_network(&mut self, network: Network) {
+        self.network = network;
+    }
+
+    pub async fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
         if transaction.amount <= 0.0 {
             return Err(anyhow!("Invalid transaction: amount must be positive!"));
         }
 
         let sender_balance = self.get_balance(&transaction.sender);
-        print!("sender: {} balance:{}", transaction.sender, sender_balance);
+        println!("sender: {} balance:{}", transaction.sender, sender_balance);
 
         if sender_balance < transaction.amount {
             return Err(anyhow!(
@@ -36,26 +50,36 @@ impl Blockchain {
                 transaction.sender
             ));
         }
-
+        let transaction_clone = transaction.clone();
         self.pending_transactions.push(transaction);
+
+        for peer in self.network.get_peers().await {
+            if let Err(err) = self
+                .network
+                .send_message(&peer, &serde_json::to_string(&transaction_clone)?)
+                .await
+            {
+                eprintln!("Failed to send transaction to {}: {}", peer, err);
+            }
+        }
+
         Ok(())
     }
 
     pub fn get_balance(&self, address: &str) -> f64 {
-        // let mut balance = 0.0;
-        // for block in &self.chain {
-        //     for transaction in &block.transactions {
-        //         if transaction.sender == address {
-        //             balance -= transaction.amount;
-        //         }
-        //         if transaction.receiver == address {
-        //             balance += transaction.amount;
-        //         }
-        //     }
-        // }
+        let mut balance = 200.0;//TODO
+        for block in &self.chain {
+            for transaction in &block.transactions {
+                if transaction.sender == address {
+                    balance -= transaction.amount;
+                }
+                if transaction.receiver == address {
+                    balance += transaction.amount;
+                }
+            }
+        }
 
-        // balance
-        150.0
+        balance
     }
 
     fn get_latest_block(&self) -> &Block {
@@ -95,7 +119,20 @@ impl Blockchain {
         self.adjust_difficulty();
     }
 
-    pub fn is_valid(&self) -> bool {
+    pub fn is_valid_block(&self, block: &Block) -> bool {
+        let latest_block = self.get_latest_block();
+        let is_valid =
+            block.previous_hash == latest_block.hash && block.hash == block.calculate_hash();
+
+        if !is_valid {
+            println!("Block {} has an invalid hash!", block.index);
+            return false;
+        }
+
+        return true;
+    }
+
+    pub fn is_valid_chain(&self) -> bool {
         for i in 1..self.chain.len() {
             let current_block = &self.chain[i];
             let previous_block = &self.chain[i - 1];

@@ -1,8 +1,9 @@
 use super::Transaction;
 use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Block {
     pub index: u64,
     pub timestamp: String,
@@ -28,7 +29,7 @@ impl Block {
         let transaction_data: String = self
             .transactions
             .iter()
-            .map(|tx| tx.get_message())
+            .map(|tx| tx.get_raw_transaction_data())
             .collect();
 
         let block_data = format!(
@@ -39,13 +40,6 @@ impl Block {
         hasher.update(block_data);
         format!("{:x}", hasher.finalize())
     }
-
-    // fn get_raw_block_data(&self) -> String {
-    //     format!(
-    //         "{}{}{}{}{}",
-    //         self.index, self.timestamp, transaction_data, self.previous_hash, self.nonce
-    //     )
-    // }
 
     // Perform Proof-of-Work by finding a hash that starts with a certain number of zeros
     pub fn mine_block(&mut self, difficulty: usize) {
