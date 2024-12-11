@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
         .split(',')
         .collect::<Vec<&str>>();
 
-    let mut blockchain = Blockchain::new(2, 10);
+    let mut blockchain = Blockchain::new(2, 10).unwrap();
     let mut network = Network::new();
     network.add_peers(peers_addr).await;
     blockchain.set_network(network.clone());
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
             blockchain.add_transaction(alice_transaction).await?;
         }
 
-        blockchain.add_block();
+        blockchain.add_block("MinerAddress");
 
         blockchain
             .add_transaction(Transaction::new(
@@ -51,9 +51,9 @@ async fn main() -> Result<()> {
                 70.0,
             ))
             .await?; //Skip sign_transaction and verify as it's a sample.
-        blockchain.add_block();
+        blockchain.add_block("MinerAddress");
 
-        blockchain.add_block(); //no transactions
+        blockchain.add_block("MinerAddress"); //no transactions
 
         //blockchain.print_chain();
 

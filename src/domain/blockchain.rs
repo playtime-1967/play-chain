@@ -1,10 +1,9 @@
-use crate::domain::transaction;
-
 use super::network;
 use super::Block;
 use super::Network;
-
 use super::Transaction;
+use crate::domain::transaction;
+
 use anyhow::{anyhow, Error, Ok, Result};
 use chrono::prelude::*;
 use std::collections::HashSet;
@@ -19,17 +18,22 @@ pub struct Blockchain {
 }
 
 impl Blockchain {
-    pub fn new(difficulty: usize, target_time: u64) -> Self {
-        let mut block_chain = Blockchain {
-            chain: Vec::new(),
-            pending_transactions: Vec::new(),
+    pub fn new(difficulty: usize, target_time: u64) -> Result<Self> {
+        if difficulty == 0 {
+            return Err(anyhow!("Difficulty must be greater than 0"));
+        }
+        if target_time == 0 {
+            return Err(anyhow!("Target time must be greater than 0"));
+        }
+
+        Ok(Blockchain {
             difficulty,
             target_time,
+            chain: vec![Block::genesis(difficulty)],
+            pending_transactions: Vec::new(),
             peers: HashSet::new(),
             network: Network::new(),
-        };
-        block_chain.add_genesis_block();
-        block_chain
+        })
     }
 
     pub fn set_network(&mut self, network: Network) {
@@ -37,10 +41,12 @@ impl Blockchain {
     }
 
     pub async fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
+        // Validate the transaction amount
         if transaction.amount <= 0.0 {
             return Err(anyhow!("Invalid transaction: amount must be positive!"));
         }
 
+        // Check sender balance
         let sender_balance = self.get_balance(&transaction.sender);
         println!("sender: {} balance:{}", transaction.sender, sender_balance);
 
@@ -50,16 +56,21 @@ impl Blockchain {
                 transaction.sender
             ));
         }
-        let transaction_clone = transaction.clone();
+        // Push transaction to pending transactions
         self.pending_transactions.push(transaction);
 
+        // Serialize the transaction once
+        let serialized_transaction =
+            serde_json::to_string(&self.pending_transactions.last().unwrap())?;
+
+        // Send the serialized transaction to all peers
         for peer in self.network.get_peers().await {
             if let Err(err) = self
                 .network
-                .send_message(&peer, &serde_json::to_string(&transaction_clone)?)
+                .send_message(&peer, &serialized_transaction)
                 .await
             {
-                eprintln!("Failed to send transaction to {}: {}", peer, err);
+                eprintln!("Error:Failed to send transaction to {}: {}", peer, err);
             }
         }
 
@@ -67,7 +78,7 @@ impl Blockchain {
     }
 
     pub fn get_balance(&self, address: &str) -> f64 {
-        let mut balance = 200.0;//TODO
+        let mut balance = 200.0; //TODO
         for block in &self.chain {
             for transaction in &block.transactions {
                 if transaction.sender == address {
@@ -90,32 +101,31 @@ impl Blockchain {
         &self.chain[self.chain.len() - 2]
     }
 
-    fn add_genesis_block(&mut self) {
-        let mut genesis_block = Block::new(0, Vec::new(), "0");
-        genesis_block.mine_block(self.difficulty);
-        self.chain.push(genesis_block);
-    }
-
-    pub fn add_block(&mut self) {
+    pub fn add_block(&mut self, miner_address: &str) {
         if self.pending_transactions.is_empty() {
-            println!("No transactions to add!");
+            println!("Warning: No transactions to add!");
             return;
         }
 
-        let reward_transaction = Transaction::reward("MinerAddress", 0.5);
+        // Reward the miner
+        let reward_transaction = Transaction::reward(miner_address, 0.5);
         self.pending_transactions.insert(0, reward_transaction);
 
+        // Take ownership of pending transactions to avoid cloning
+        let transactions = std::mem::take(&mut self.pending_transactions);
+
+        // Get the previous block
         let previous_block = self.get_latest_block();
-        let mut new_block = Block::new(
-            previous_block.index + 1,
-            self.pending_transactions.clone(),
-            &previous_block.hash,
-        );
+        let mut new_block =
+            Block::new(previous_block.index + 1, transactions, &previous_block.hash);
+
+        // Mine the block
         new_block.mine_block(self.difficulty);
+
+        // Add the block to the chain
         self.chain.push(new_block);
 
-        self.pending_transactions.clear(); // Clear the pending transactions once included in a block
-
+        // Adjust the difficulty
         self.adjust_difficulty();
     }
 
@@ -125,7 +135,7 @@ impl Blockchain {
             block.previous_hash == latest_block.hash && block.hash == block.calculate_hash();
 
         if !is_valid {
-            println!("Block {} has an invalid hash!", block.index);
+            eprintln!("Error: Block {} has an invalid hash!", block.index);
             return false;
         }
 
@@ -138,13 +148,13 @@ impl Blockchain {
             let previous_block = &self.chain[i - 1];
 
             if current_block.hash != current_block.calculate_hash() {
-                println!("Block {} has an invalid hash!", current_block.index);
+                eprintln!("Error: Block {} has an invalid hash!", current_block.index);
                 return false;
             }
 
             if current_block.previous_hash != previous_block.hash {
-                println!(
-                    "Block {} has an invalid previous hash!",
+                eprintln!(
+                    "Error: Block {} has an invalid previous hash!",
                     current_block.index
                 );
                 return false;

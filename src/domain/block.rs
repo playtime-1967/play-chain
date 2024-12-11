@@ -25,6 +25,20 @@ impl Block {
         }
     }
 
+    pub fn genesis(difficulty: usize) -> Self {
+        let mut block = Block {
+            index: 0,
+            transactions: Vec::new(),
+            previous_hash: String::from("0"),
+            timestamp: Utc::now().to_rfc3339(),
+            hash: String::new(),
+            nonce: 0,
+        };
+
+        block.mine_block(difficulty);
+        block
+    }
+
     pub fn calculate_hash(&self) -> String {
         let transaction_data: String = self
             .transactions
