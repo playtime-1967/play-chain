@@ -5,7 +5,7 @@ pub mod util;
 use clap::{builder::Str, Arg, ArgMatches, Command};
 use domain::{Blockchain, Network, Transaction, Wallet};
 use tokio::time::{sleep, Duration};
-
+use util::converter;
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Play Chain!");
@@ -20,7 +20,9 @@ async fn main() -> Result<()> {
 
     let mut blockchain = Blockchain::new(2, 10).unwrap();
     let mut network = Network::new();
-    network.add_peers(peers_addr).await;
+    network
+        .add_peers(converter::convert_vec_of_str_to_vec_of_string(peers_addr))
+        .await;
     blockchain.set_network(network.clone());
 
     tokio::spawn(async move {
@@ -32,7 +34,8 @@ async fn main() -> Result<()> {
         let alice_wallet = Wallet::new();
         let bob_wallet: Wallet = Wallet::new();
         let mut alice_transaction =
-            Transaction::new(&alice_wallet.address, &bob_wallet.address, 30.0);
+            Transaction::new(alice_wallet.address.clone(), bob_wallet.address, 30.0);
+
         alice_wallet.sign_transaction(&mut alice_transaction)?;
 
         if let Err(err) = alice_transaction.verify(&alice_wallet.verifying_key) {
@@ -41,19 +44,22 @@ async fn main() -> Result<()> {
             println!("Transaction signature verified!");
             blockchain.add_transaction(alice_transaction).await?;
         }
+        let miner_addr = String::from("miner_addr");
+        blockchain.add_block(miner_addr.clone());
 
-        blockchain.add_block("MinerAddress");
+        let john_wallet = Wallet::new();
+        let chris_wallet: Wallet = Wallet::new();
 
         blockchain
             .add_transaction(Transaction::new(
-                &alice_wallet.address,
-                &bob_wallet.address,
+                john_wallet.address,
+                chris_wallet.address,
                 70.0,
             ))
             .await?; //Skip sign_transaction and verify as it's a sample.
-        blockchain.add_block("MinerAddress");
+        blockchain.add_block(miner_addr.clone());
 
-        blockchain.add_block("MinerAddress"); //no transactions
+        blockchain.add_block(miner_addr.clone()); //no transactions
 
         //blockchain.print_chain();
 
@@ -90,7 +96,11 @@ fn get_args() -> ArgMatches {
 }
 
 fn invalidate_chain_Sample(blockchain: &mut Blockchain) {
-    let transactions = vec![Transaction::new("...", "...", 100.0)];
+    let transactions = vec![Transaction::new(
+        String::from("..."),
+        String::from("..."),
+        100.0,
+    )];
     blockchain.chain[1].transactions = transactions;
     blockchain.chain[1].hash = blockchain.chain[1].calculate_hash();
     if blockchain.is_valid_chain() {

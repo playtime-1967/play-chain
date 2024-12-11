@@ -12,19 +12,19 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn new(sender: &str, receiver: &str, amount: f64) -> Self {
+    pub fn new(sender: String, receiver: String, amount: f64) -> Self {
         Transaction {
-            sender: sender.to_string(),
-            receiver: receiver.to_string(),
+            sender: sender,
+            receiver: receiver,
             amount,
             is_reward: false,
             signature: None,
         }
     }
-    pub fn reward(receiver: &str, amount: f64) -> Self {
+    pub fn reward(receiver: String, amount: f64) -> Self {
         Transaction {
-            sender: "Network".to_string(),
-            receiver: receiver.to_string(),
+            sender: String::from("Network"),
+            receiver: receiver,
             amount,
             is_reward: true,
             signature: None,

@@ -101,7 +101,7 @@ impl Blockchain {
         &self.chain[self.chain.len() - 2]
     }
 
-    pub fn add_block(&mut self, miner_address: &str) {
+    pub fn add_block(&mut self, miner_address: String) {
         if self.pending_transactions.is_empty() {
             println!("Warning: No transactions to add!");
             return;
@@ -136,10 +136,10 @@ impl Blockchain {
 
         if !is_valid {
             eprintln!("Error: Block {} has an invalid hash!", block.index);
-            return false;
+            false
+        } else {
+            true
         }
-
-        return true;
     }
 
     pub fn is_valid_chain(&self) -> bool {
@@ -165,7 +165,8 @@ impl Blockchain {
 
     pub fn adjust_difficulty(&mut self) {
         if self.chain.len() < 2 {
-            return; // No adjustment for the genesis block
+            println!("Genesis block detected; no difficulty adjustment needed.");
+            return;
         }
 
         let last_block = self.get_latest_block();

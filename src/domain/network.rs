@@ -29,15 +29,16 @@ impl Network {
         let peers = Arc::clone(&self.peers);
         tokio::spawn(async move {
             loop {
-                let mut peers = {
-                    // Acquire lock briefly
-                    let locked_peers = peers.lock().await;
-                    locked_peers.clone()
-                };
-
                 if let Ok((stream, addr)) = listener.accept().await {
-                    println!("New connection from {}", addr);
+                    //The lock is held only for the duration of inserting the new peer into the peers set, and then the lock is released.
+                    let mut peers = {
+                        let locked_peers = peers.lock().await;
+                        locked_peers.clone()
+                    };
                     peers.insert(addr.to_string());
+                    println!("New connection from {}", addr);
+
+                    // Handle the connection asynchronously
                     Network::handle_connection(stream).await;
                 }
             }
@@ -86,12 +87,13 @@ impl Network {
     }
 
     pub async fn add_peer(&self, addr: String) {
-        self.peers.lock().await.insert(addr.to_string());
+        self.peers.lock().await.insert(addr);
     }
 
-    pub async fn add_peers(&mut self, addrs: Vec<&str>) {
+    pub async fn add_peers(&mut self, addrs: Vec<String>) {
+        let mut peers = self.peers.lock().await;
         for addr in addrs {
-            self.peers.lock().await.insert(addr.to_string());
+            peers.insert(addr);
         }
     }
 
