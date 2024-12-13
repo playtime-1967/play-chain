@@ -8,7 +8,7 @@ use tokio::time::{sleep, Duration};
 use util::converter;
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Play Chain!");
+    println!("Play Chain!--------------------------------PROOF OF WORK");
 
     let args = get_args();
     let listen_addr = args.get_one::<String>("listen").unwrap().clone();

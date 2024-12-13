@@ -13,7 +13,7 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn new(sender: String, receiver: String, amount: f64) -> Self {
-        Transaction {
+        Self {
             sender: sender,
             receiver: receiver,
             amount,
@@ -22,7 +22,7 @@ impl Transaction {
         }
     }
     pub fn reward(receiver: String, amount: f64) -> Self {
-        Transaction {
+        Self {
             sender: String::from("Network"),
             receiver: receiver,
             amount,

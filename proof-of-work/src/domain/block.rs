@@ -15,7 +15,7 @@ pub struct Block {
 
 impl Block {
     pub fn new(index: u64, transactions: Vec<Transaction>, previous_hash: &str) -> Self {
-        Block {
+        Self {
             index,
             transactions,
             previous_hash: previous_hash.to_string(),

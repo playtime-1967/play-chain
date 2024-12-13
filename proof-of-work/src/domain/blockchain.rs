@@ -1,8 +1,6 @@
-use super::network;
 use super::Block;
 use super::Network;
 use super::Transaction;
-use crate::domain::transaction;
 
 use anyhow::{anyhow, Error, Ok, Result};
 use chrono::prelude::*;
@@ -26,7 +24,7 @@ impl Blockchain {
             return Err(anyhow!("Target time must be greater than 0"));
         }
 
-        Ok(Blockchain {
+        Ok(Self {
             difficulty,
             target_time,
             chain: vec![Block::genesis(difficulty)],

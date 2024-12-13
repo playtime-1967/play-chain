@@ -15,7 +15,7 @@ impl Wallet {
     pub fn new() -> Self {
         let (signing_key, verifying_key) = sign_helper::generate_keypair();
 
-        Wallet {
+        Self {
             address: hex::encode(verifying_key.as_bytes()),
             signing_key,
             verifying_key,
