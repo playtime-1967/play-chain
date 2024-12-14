@@ -8,6 +8,8 @@ pub struct Blockchain {
     pub chain: Vec<Block>,
     pub validators: HashMap<String, Validator>,
     pub stakes: HashMap<String, Stake>,
+    pub balances: HashMap<String, u64>,
+    pub reward: u64,
 }
 
 impl Blockchain {
@@ -16,13 +18,16 @@ impl Blockchain {
             chain: vec![],
             stakes: HashMap::new(),
             validators: HashMap::new(),
+            balances: HashMap::new(),
+            reward: 10, // Default reward per block.
         }
     }
 
     //Validator becomes eligible to validate blocks by staking a certain amount of cryptocurrency.
     pub fn add_validator(&mut self, validator: Validator, stake: Stake) {
         self.validators.insert(validator.address.clone(), validator);
-        self.stakes.insert(stake.owner.clone(), stake);
+        self.stakes.insert(stake.owner.clone(), stake.clone());
+        self.balances.insert(stake.owner, stake.amount); // Initialize balance for the validator.s
     }
 
     pub fn create_genesis_block(&mut self) {
@@ -37,6 +42,14 @@ impl Blockchain {
 
         let last_block = self.chain.last().unwrap();
         let selected_validator = self.select_validator()?;
+
+        // Add reward to the validator's balance.
+        if let Some(balance) = self.balances.get_mut(&selected_validator) {
+            *balance += self.reward;
+        } else {
+            eprintln!("Validator not found in balances!");
+            return None;
+        }
 
         let new_block = Block::new(
             last_block.index + 1,
@@ -60,5 +73,12 @@ impl Blockchain {
         }
 
         weighted_pool.choose(&mut rand::thread_rng()).cloned()
+    }
+
+    pub fn print_balances(&self) {
+        println!("Current Balances:");
+        for (address, balance) in &self.balances {
+            println!("{}: {}", address, balance);
+        }
     }
 }

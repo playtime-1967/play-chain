@@ -2,7 +2,7 @@
 use proof_of_stake::{Blockchain, Stake, Validator};
 fn main() {
     println!("Play Chain!--------------------------------PROOF OF STAKE!");
-    
+
     let mut blockchain = Blockchain::new();
     blockchain.create_genesis_block();
 
@@ -14,6 +14,11 @@ fn main() {
 
     blockchain.add_block("Transaction 1".to_string());
     blockchain.add_block("Transaction 2".to_string());
+    blockchain.add_block("Transaction 3".to_string());
 
+    println!("Blockchain:");
     println!("{:#?}", blockchain.chain);
+
+    println!("Balances:");
+    blockchain.print_balances();
 }
