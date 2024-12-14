@@ -2,7 +2,7 @@ use anyhow::{anyhow, Ok, Result};
 #[derive(Debug, Clone)]
 pub struct Stake {
     pub owner: String,
-    pub amount: u64,
+    pub amount: u64, //voting power or probability of selection 
 }
 
 impl Stake {

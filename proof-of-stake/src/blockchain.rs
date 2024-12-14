@@ -20,9 +20,9 @@ impl Blockchain {
             chain: vec![],
             stakes: HashMap::new(),
             validators: HashMap::new(),
-            balances: HashMap::new(),
+            balances: HashMap::new(), //total account balance of a participant (validator or user) in the system.Includes both the staked amount and the unstaked/free funds
             pending_transactions: vec![], // Transactions awaiting inclusion in the next block.
-            reward: 5,                    // Default reward per block.
+            reward: 5,                // Default reward per block.
         }
     }
 
@@ -68,7 +68,6 @@ impl Blockchain {
             eprintln!("Warning: Blockchain has no genesis block!");
             return None;
         }
-
         if self.pending_transactions.is_empty() {
             println!("Warning: No transactions to add!");
             return None;

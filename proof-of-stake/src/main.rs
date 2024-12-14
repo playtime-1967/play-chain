@@ -1,5 +1,6 @@
 #![allow(warnings)]
-use proof_of_stake::{Blockchain, Stake, Transaction, Validator};
+use proof_of_stake::{Block, Blockchain, Stake, Transaction, Validator};
+
 fn main() {
     println!("Play Chain!--> PROOF OF STAKE!");
 
@@ -27,6 +28,16 @@ fn main() {
 
     blockchain.add_block();
     blockchain.add_block(); //no transactions to add!
+
+    // Simulate malicious behavior: Validator2 double-signs block 2
+    let malicious_block = Block::new(
+        2,
+        blockchain.chain[1].hash.clone(),
+        vec![Transaction::new("X".to_string(), "Y".to_string(), 15)],
+        "Validator2".to_string(),
+    );
+    blockchain.chain.push(malicious_block);
+    blockchain.detect_and_slash();
 
     println!("Blockchain:--------------------------------");
     println!("{:#?}", blockchain.chain);

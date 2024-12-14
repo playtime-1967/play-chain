@@ -3,7 +3,7 @@ mod blockchain;
 mod stake;
 mod validator;
 mod transaction;
-
+mod malicious_detector;
 
 pub use block::Block;
 pub use blockchain::Blockchain;
