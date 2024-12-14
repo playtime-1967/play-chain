@@ -1,7 +1,7 @@
 #![allow(warnings)]
-use proof_of_stake::{Blockchain, Stake, Validator};
+use proof_of_stake::{Blockchain, Stake, Transaction, Validator};
 fn main() {
-    println!("Play Chain!--------------------------------PROOF OF STAKE!");
+    println!("Play Chain!--> PROOF OF STAKE!");
 
     let mut blockchain = Blockchain::new();
     blockchain.create_genesis_block();
@@ -12,13 +12,25 @@ fn main() {
     blockchain.add_validator(validator1, Stake::new("Validator1".to_string(), 50));
     blockchain.add_validator(validator2, Stake::new("Validator2".to_string(), 30));
 
-    blockchain.add_block("Transaction 1".to_string());
-    blockchain.add_block("Transaction 2".to_string());
-    blockchain.add_block("Transaction 3".to_string());
+    // Add transactions.
+    blockchain
+        .add_transaction(Transaction::new(
+            "Validator1".to_string(),
+            "Alice".to_string(),
+            40,
+        ))
+        .unwrap();
 
-    println!("Blockchain:");
+    blockchain
+        .add_transaction(Transaction::new("Alice".to_string(), "Bob".to_string(), 15))
+        .unwrap();
+
+    blockchain.add_block();
+    blockchain.add_block(); //no transactions to add!
+
+    println!("Blockchain:--------------------------------");
     println!("{:#?}", blockchain.chain);
 
-    println!("Balances:");
+    println!("Balances:----------------------------------");
     blockchain.print_balances();
 }
