@@ -27,6 +27,7 @@ impl Network {
         println!("Listening for peers on {}", bind_addr);
 
         let peers = Arc::clone(&self.peers);
+        //Spawn a task to handle each connection with TcpStream.
         tokio::spawn(async move {
             loop {
                 if let Ok((stream, addr)) = listener.accept().await {
