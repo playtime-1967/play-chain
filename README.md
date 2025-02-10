@@ -50,19 +50,17 @@ A lightweight PoW blockchain includes core blockchain functionality, transaction
 To start the blockchain network, open three or more terminal windows in the root directory. 
 Each node must be started with its own address and the addresses of its peers as command-line arguments.  
 
-## Start Nodes  
-
-**Terminal 1:**  
+Terminal 1:  
 ```sh
 cargo run --bin proof-of-work 127.0.0.1:8050 127.0.0.1:8052,127.0.0.1:8051
 ```  
 
-**Terminal 2:**  
+Terminal 2:  
 ```sh
 cargo run --bin proof-of-work 127.0.0.1:8051 127.0.0.1:8050,127.0.0.1:8052
 ```  
 
-**Terminal 3:**  
+Terminal 3:  
 ```sh
 cargo run --bin proof-of-work 127.0.0.1:8052 127.0.0.1:8051,127.0.0.1:8050
 ```  
