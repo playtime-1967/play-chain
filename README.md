@@ -68,6 +68,10 @@ cargo run --bin proof-of-work 127.0.0.1:8052 127.0.0.1:8051,127.0.0.1:8050
 - Each node must include the IP and port of all other peers as arguments.  
 - Once started, the nodes will begin communicating, mining, and broadcasting new blocks to each other.  
 
+Screenshot of a peer's terminal in action:  
+![proof-of-work-terminal](https://github.com/playtime-1967/play-chain/blob/master/raw/proof-of-work-terminal.jpg)
+
+
 ----------------------------------------------------------------------------------
 
 ## 2- Proof of Stake (PoS)
