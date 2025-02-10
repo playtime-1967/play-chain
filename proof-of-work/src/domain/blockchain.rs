@@ -39,12 +39,11 @@ impl Blockchain {
     }
 
     pub async fn add_transaction(&mut self, transaction: Transaction) -> Result<()> {
-        // Validate the transaction amount
         if transaction.amount <= 0.0 {
             return Err(anyhow!("Invalid transaction: amount must be positive!"));
         }
 
-        // Check sender balance
+        //check sender balance
         let sender_balance = self.get_balance(&transaction.sender);
         println!("sender: {} balance:{}", transaction.sender, sender_balance);
 
@@ -54,14 +53,14 @@ impl Blockchain {
                 transaction.sender
             ));
         }
-        // Push transaction to pending transactions
+
         self.pending_transactions.push(transaction);
 
-        // Serialize the transaction once
+        //serialize the transaction once
         let serialized_transaction =
             serde_json::to_string(&self.pending_transactions.last().unwrap())?;
 
-        // Send the serialized transaction to all peers
+        //send the transaction to all peers
         for peer in self.network.get_peers().await {
             if let Err(err) = self
                 .network
@@ -76,7 +75,7 @@ impl Blockchain {
     }
 
     pub fn get_balance(&self, address: &str) -> f64 {
-        let mut balance = 200.0; //TODO
+        let mut balance = 200.0; //default balance
         for block in &self.chain {
             for transaction in &block.transactions {
                 if transaction.sender == address {
@@ -91,39 +90,25 @@ impl Blockchain {
         balance
     }
 
-    fn get_latest_block(&self) -> &Block {
-        self.chain.last().unwrap()
-    }
-
-    fn get_second_last_block(&self) -> &Block {
-        &self.chain[self.chain.len() - 2]
-    }
-
     pub fn add_block(&mut self, miner_address: String) {
         if self.pending_transactions.is_empty() {
             println!("Warning: No transactions to add!");
             return;
         }
 
-        // Reward the miner
+        //reward the miner
         let reward_transaction = Transaction::reward(miner_address, 0.5);
         self.pending_transactions.insert(0, reward_transaction);
 
-        // Take ownership of pending transactions to avoid cloning
+        //take ownership of pending transactions to avoid cloning
         let transactions = std::mem::take(&mut self.pending_transactions);
 
-        // Get the previous block
         let previous_block = self.get_latest_block();
         let mut new_block =
             Block::new(previous_block.index + 1, transactions, &previous_block.hash);
 
-        // Mine the block
         new_block.mine_block(self.difficulty);
-
-        // Add the block to the chain
         self.chain.push(new_block);
-
-        // Adjust the difficulty
         self.adjust_difficulty();
     }
 
@@ -188,6 +173,14 @@ impl Blockchain {
             self.difficulty -= 1;
             println!("Difficulty decreased to {}", self.difficulty);
         }
+    }
+
+    fn get_latest_block(&self) -> &Block {
+        self.chain.last().unwrap()
+    }
+
+    fn get_second_last_block(&self) -> &Block {
+        &self.chain[self.chain.len() - 2]
     }
 
     pub fn print_chain(&self) {

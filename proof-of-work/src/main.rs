@@ -8,8 +8,6 @@ use tokio::time::{sleep, Duration};
 use util::converter;
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Play Chain!---> PROOF OF WORK!");
-
     let args = get_args();
     let listen_addr = args.get_one::<String>("listen").unwrap().clone();
     let peers_addr = args
@@ -29,7 +27,7 @@ async fn main() -> Result<()> {
         network.start_listening(&listen_addr).await;
     });
 
-    let mut step_number = 1;
+    let mut block_counter = 1;
     loop {
         let alice_wallet = Wallet::new();
         let bob_wallet: Wallet = Wallet::new();
@@ -56,10 +54,10 @@ async fn main() -> Result<()> {
                 chris_wallet.address,
                 70.0,
             ))
-            .await?; //Skip sign_transaction and verify as it's a sample.
+            .await?; //skip sign_transaction and verify as it's a sample.
         blockchain.add_block(miner_addr.clone());
 
-        blockchain.add_block(miner_addr.clone()); //no transactions
+        blockchain.add_block(miner_addr.clone()); //no transaction sample
 
         //blockchain.print_chain();
 
@@ -69,13 +67,12 @@ async fn main() -> Result<()> {
             println!("The blockchain is invalid!");
         }
 
-        println!("DONE, STEP {}-------------------------------------------------------------------------",step_number);
-        sleep(Duration::from_secs(3)).await;
-        step_number = step_number + 1;
+        println!("Block Counter: {block_counter} Completed. ---------------------------------------------------------------------------------------------------");
+        sleep(Duration::from_secs(5)).await;
+        block_counter = block_counter + 1;
     }
 
     Ok(())
-    //invalidate_chain_Sample(&mut blockchain);
 }
 
 fn get_args() -> ArgMatches {
@@ -108,17 +105,4 @@ fn invalidate_chain_Sample(blockchain: &mut Blockchain) {
     } else {
         println!("The blockchain is invalid!");
     }
-}
-
-fn sign_verify_tr_sample() {
-    // let (signing_key, verifying_key) = sign_helper::generate_keypair();
-    // transaction1.sign(&signing_key)?;
-    // match transaction1.verify(&verifying_key) {
-    //     std::result::Result::Ok(_) => println!("Transaction's signature is valid!"),
-    //     Err(err) => {
-    //         panic!("Transaction verification failed: {}", err)
-    //     }
-    // }
-    // let mut transaction1 = Transaction::new("Alice", "Bob", 30.0);
-    //blockchain.add_transaction(transaction1)?;
 }

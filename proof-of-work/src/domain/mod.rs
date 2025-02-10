@@ -1,11 +1,11 @@
-//Declare submodules
+//declare submodules
 mod block;
 mod blockchain;
 mod network;
 mod transaction;
 mod wallet;
 
-//Re-export them for easier access
+//re-export the mods for easier access
 pub use block::Block;
 pub use blockchain::Blockchain;
 pub use network::Network;

@@ -27,11 +27,10 @@ impl Network {
         println!("Listening for peers on {}", bind_addr);
 
         let peers = Arc::clone(&self.peers);
-        //Spawn a task to handle each connection with TcpStream.
         tokio::spawn(async move {
             loop {
                 if let Ok((stream, addr)) = listener.accept().await {
-                    //The lock is held only for the duration of inserting the new peer into the peers set, and then the lock is released.
+                    //the lock is held only for the duration of inserting the new peer into the peers set, and then the lock is released.
                     let mut peers = {
                         let locked_peers = peers.lock().await;
                         locked_peers.clone()
@@ -39,7 +38,6 @@ impl Network {
                     peers.insert(addr.to_string());
                     println!("New connection from {}", addr);
 
-                    // Handle the connection asynchronously
                     Network::handle_connection(stream).await;
                 }
             }
@@ -59,7 +57,7 @@ impl Network {
                     let message = String::from_utf8_lossy(&buffer[..n]);
                     println!("Received: {}", message);
 
-                    // Echo the message back (you can replace this with custom handling logic)
+                    //TODO: replace this with custom handling logic.
                     if let Err(err) = stream.write_all(message.as_bytes()).await {
                         eprintln!("Failed to write to stream: {}", err);
                         break;
