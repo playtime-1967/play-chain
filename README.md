@@ -68,10 +68,33 @@ cargo run --bin proof-of-work 127.0.0.1:8052 127.0.0.1:8051,127.0.0.1:8050
 - Each node must include the IP and port of all other peers as arguments.  
 - Once started, the nodes will begin communicating, mining, and broadcasting new blocks to each other.  
 
-Screenshot of a peer's terminal in action:  
+ Example Output:  
+
 ![proof-of-work-terminal](https://github.com/playtime-1967/play-chain/blob/master/raw/proof-of-work-terminal.jpg)
 
 
 ----------------------------------------------------------------------------------
 
+
+
 ## 2- Proof of Stake (PoS)
+a lightweight PoS blockchain includes fundamental blockchain functionalities such as transaction handling, block creation, validator selection, and malicious behavior detection.
+
+## Features
+- **Proof of Stake (PoS) Consensus**: Selects validators based on their stake in the network.
+- **Transaction System**: Supports balance management and transaction validation. Users send transactions, which are verified and added to a pending pool.
+- **Validator Staking**: Participants stake tokens to become eligible for block validation. Validators are selected proportionally to their stake weight.
+- **Malicious Behavior Detection**: Detects and penalizes double-signing validators, slashes dishonest participants, and removes fraudulent blocks from the chain.
+
+
+## Steps to Run  
+
+To start the blockchain network, open a terminal windows in the root directory and run:
+```sh
+cargo run --bin proof-of-stake
+```  
+
+Example Output: 
+
+![proof-of-stake-terminal](https://github.com/playtime-1967/play-chain/blob/master/raw/proof-of-stake-terminal.jpg)
+
