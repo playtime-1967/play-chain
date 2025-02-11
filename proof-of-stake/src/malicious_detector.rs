@@ -2,7 +2,7 @@ use super::Blockchain;
 use std::collections::HashSet;
 
 impl Blockchain {
-    // Detect double-signing or other malicious activity
+    //detect double-signing or other malicious activity
     pub fn detect_and_slash(&mut self) {
         let mut seen_blocks: HashSet<(u64, String)> = Self::get_malicious_validators();
         let mut validators_to_slash: Vec<String> = vec![];
@@ -27,7 +27,7 @@ impl Blockchain {
             self.slash_validator(&validator_address);
         }
 
-        // Remove malicious blocks from the chain
+        //remove malicious blocks from the chain
         for &index in malicious_blocks.iter().rev() {
             self.chain.remove(index);
             println!("Removed malicious block at index {} from the chain.", index);
@@ -67,14 +67,14 @@ impl Blockchain {
         }
     }
 
-    // Remove a validator from the system
+    //remove a validator from the system
     fn remove_validator(&mut self, validator_address: &String) {
         self.validators.remove(validator_address);
         self.stakes.remove(validator_address);
     }
 
     fn get_malicious_validators() -> HashSet<(u64, String)> {
-        // A mock set of blocks to represent malicious behavior for demo purposes
+        //a mock set of blocks to represent malicious behavior for demo purposes.
         HashSet::from([(2, String::from("Validator2"))])
     }
 }

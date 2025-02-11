@@ -75,7 +75,7 @@ impl Blockchain {
     }
 
     pub fn get_balance(&self, address: &str) -> f64 {
-        let mut balance = 200.0; //default balance
+        let mut balance = 200.0; //default balance for demo purposes.
         for block in &self.chain {
             for transaction in &block.transactions {
                 if transaction.sender == address {
